@@ -10,8 +10,8 @@ from dataLoader import load_all_txt_files
 
 R = 8.314  
 alpha_levels = np.linspace(0.1, 0.9, 9)
-DATA_DIR = './dataSets'
-RESULTS_DIR = './results'
+DATA_DIR = '../dataSets'
+RESULTS_DIR = '../results'
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
 datasets = load_all_txt_files(DATA_DIR)

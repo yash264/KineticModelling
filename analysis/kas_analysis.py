@@ -7,8 +7,8 @@ from dataLoader import load_all_txt_files
 import os
 
 
-DATA_DIR = './dataSets'          
-RESULTS_DIR = './results'    
+DATA_DIR = '../dataSets'          
+RESULTS_DIR = '../results'    
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
 R = 8.314  
