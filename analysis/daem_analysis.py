@@ -35,9 +35,6 @@ for i, (fname, Ts, weight) in enumerate(datasets):
 
     data[beta] = {"alpha": alpha, "T": T_K}
 
-if len(data) < 2:
-    raise RuntimeError("Need at least two heating rates for DAEM analysis.")
-
 # === Precompute interpolators for speed ===
 interpolators = {}
 for beta, rec in data.items():
@@ -48,11 +45,14 @@ for beta, rec in data.items():
     interpolators[beta] = fT
 
 
+kB = 1.381e-23  # J/K
+h = 6.626e-34   # J·s
+
 records = []
 plt.figure(figsize=(9,7))
 
 for a in tqdm(alpha_levels, desc="Processing α levels"):
-    X, Y = [], []
+    X, Y, T_list = [], [], []
 
     for beta, fT in interpolators.items():
         try:
@@ -63,20 +63,35 @@ for a in tqdm(alpha_levels, desc="Processing α levels"):
         if np.isfinite(T_a):
             X.append(1.0 / T_a)
             Y.append(np.log(beta / (T_a ** 2)))  
+            T_list.append(T_a)
 
     if len(X) >= 2:
         X = np.array(X)
         Y = np.array(Y)
         slope, intercept, r, *_ = linregress(X, Y)
 
-        Ea = -slope * R / 1000  
+        Ea_J = -slope * R                # J/mol
+        Ea = Ea_J / 1000                 # kJ/mol
+
+        Tm = np.mean(T_list)
+        beta_avg = np.mean(list(data.keys()))
+
+        k0 = (beta_avg * Ea_J * np.exp(Ea_J / (R * Tm))) / (R * (Tm ** 2))
+
+        delta_H = (Ea_J - R * Tm) / 1000  # kJ/mol
+        delta_G = (Ea_J + R * Tm * np.log((kB * Tm) / (h * k0))) / 1000  # kJ/mol
+        delta_S = (delta_H * 1000 - delta_G * 1000) / Tm / 1000  # kJ/mol·K
 
         records.append({
             "α": round(a,2),
             "Slope": slope,
             "Intercept": intercept,
             "R²": round(r**2, 5),
-            "Ea (kJ/mol)": round(Ea, 3)
+            "Ea (kJ/mol)": round(Ea, 3),
+            "k0 (1/min)": f"{k0:.3e}",
+            "ΔH (kJ/mol)": round(delta_H, 3),
+            "ΔG (kJ/mol)": round(delta_G, 3),
+            "ΔS (kJ/mol·K)": round(delta_S, 5)
         })
 
         plt.plot(X, Y, 'o', label=f'α={a:.2f}')
@@ -97,6 +112,16 @@ plt.show()
 
 print("\nDAEM Summary:")
 print(df_res.to_string(index=False))
+print(f"\nResults saved to: {csv_path}")
+
+
+
+
+
+
+
+
+
 
 
 

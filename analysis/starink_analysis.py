@@ -4,28 +4,33 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 from scipy.stats import linregress
 from tqdm import tqdm
-import os
+import os, re
 from dataLoader import load_all_txt_files
 
-R = 8.314  
+
+R = 8.314      # J/mol·K
+kB = 1.381e-23 # J/K
+h = 6.626e-34  # J·s
+
 alpha_levels = np.linspace(0.1, 0.9, 9)
 DATA_DIR = '../dataSets'
 RESULTS_DIR = '../results'
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
 
-datasets = load_all_txt_files(DATA_DIR)
 data = {}
-
 for i, (fname, Ts, weight) in enumerate(datasets):
-    
-    beta = [10, 20, 40, 60][i % 4]
+    m = re.search(r'@(\d+)', fname)
+    if m:
+        beta = float(m.group(1))
+    else:
+        beta = [10, 20, 40, 60][i % 4]  
 
     Ts = np.array(Ts, dtype=float)
     weight = np.array(weight, dtype=float)
 
     if len(Ts) < 5 or len(weight) < 5:
-        print(f"Skipping {fname} (insufficient data)")
+        print(f"Skipping {fname} — insufficient points.")
         continue
 
     T_K = Ts + 273.15
@@ -34,20 +39,26 @@ for i, (fname, Ts, weight) in enumerate(datasets):
 
     data[beta] = {"alpha": alpha, "T": T_K}
 
-# === Precompute interpolators for speed ===
+
+# === PRECOMPUTE INTERPOLATORS ===
 interpolators = {}
 for beta, rec in data.items():
     alpha = rec["alpha"]
     T = rec["T"]
+
     step = max(1, len(alpha) // 500)
-    interpolators[beta] = interp1d(alpha[::step], T[::step], fill_value="extrapolate", assume_sorted=True)
+    alpha_ds = alpha[::step]
+    T_ds = T[::step]
+
+    fT = interp1d(alpha_ds, T_ds, fill_value="extrapolate", assume_sorted=True)
+    interpolators[beta] = fT
 
 
 records = []
-plt.figure(figsize=(9,7))
+plt.figure(figsize=(9, 7))
 
 for a in tqdm(alpha_levels, desc="Processing α levels"):
-    X, Y = [], []
+    X, Y, T_list = [], [], []
 
     for beta, fT in interpolators.items():
         try:
@@ -57,25 +68,37 @@ for a in tqdm(alpha_levels, desc="Processing α levels"):
 
         if np.isfinite(T_a):
             X.append(1.0 / T_a)
-            Y.append(np.log(beta / (T_a**1.92)))  
+            Y.append(np.log(beta / (T_a ** 1.92)))
+            T_list.append(T_a)
 
     if len(X) >= 2:
-        X = np.array(X)
-        Y = np.array(Y)
-
+        X, Y = np.array(X), np.array(Y)
         slope, intercept, r, *_ = linregress(X, Y)
-        Ea = -slope * R / 1.0008 / 1000  
+
+        Ea_J = -slope * R / 1.0008
+        Ea_kJ = Ea_J / 1000
+
+        Tm = np.mean(T_list)
+        beta_avg = np.mean(list(data.keys()))
+        k0 = (beta_avg * Ea_J * np.exp(Ea_J / (R * Tm))) / (R * (Tm ** 2))
+        delta_H = (Ea_J - R * Tm) / 1000
+        delta_G = (Ea_J + R * Tm * np.log((kB * Tm) / (h * k0))) / 1000
+        delta_S = (delta_H * 1000 - delta_G * 1000) / Tm / 1000
 
         records.append({
-            "α": round(a,2),
-            "Slope": slope,
+            "α": round(a, 2),
+            "Ea (kJ/mol)": round(Ea_kJ, 3),
             "Intercept": intercept,
-            "R²": r**2,
-            "Ea (kJ/mol)": round(Ea,3)
+            "R²": round(r ** 2, 5),
+            "k0 (1/min)": f"{k0:.3e}",
+            "ΔH (kJ/mol)": round(delta_H, 3),
+            "ΔG (kJ/mol)": round(delta_G, 3),
+            "ΔS (kJ/mol·K)": round(delta_S, 5)
         })
 
-        plt.plot(X, Y, 'o', label=f'α={a:.2f}')
-        plt.plot(X, slope*X + intercept, '--')
+        label = f'α={a:.2f}'
+        plt.plot(X, Y, 'o', label=label)
+        plt.plot(X, slope * X + intercept, '--')
 
 
 df_res = pd.DataFrame(records)
@@ -89,8 +112,9 @@ plt.title("Starink Method Analysis", fontsize=14)
 plt.legend(fontsize='x-small', ncol=3)
 plt.grid(True)
 plt.tight_layout()
-plt.show()
+plt.show(block=True)
 
-print(f"Results saved to: {csv_path}")
-print("\nStarink Summary:")
-print(df_res.to_string(index=False))
+print("\n Starink Method Summary:")
+print(df_res.head().to_string(index=False))
+print(f"\n Results saved to: {csv_path}")
+

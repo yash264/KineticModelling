@@ -27,6 +27,7 @@ for i, (fname, Ts, weight) in enumerate(datasets):
 
     Ts = np.array(Ts, dtype=float)
     weight = np.array(weight, dtype=float)
+
     if len(Ts) < 5 or len(weight) < 5:
         print(f" Skipping {fname} — insufficient points")
         continue
@@ -60,11 +61,14 @@ for beta, rec in data.items():
     interpolators[beta] = (fT, fd)
 
 
+kB = 1.381e-23  # J/K
+h = 6.626e-34   # J·s
+
 records = []
 plt.figure(figsize=(9, 7))
 
 for a in tqdm(alpha_levels, desc="Processing α levels"):
-    X, Y = [], []
+    X, Y, T_list = [], [], []
 
     for beta, (fT, fd) in interpolators.items():
         try:
@@ -76,18 +80,33 @@ for a in tqdm(alpha_levels, desc="Processing α levels"):
         if np.isfinite(T_a) and np.isfinite(da_a) and da_a > 0:
             X.append(1.0 / T_a)
             Y.append(np.log(beta * da_a))
+            T_list.append(T_a)
 
     if len(X) >= 2:
         X = np.array(X)
         Y = np.array(Y)
         slope, intercept, r, *_ = linregress(X, Y)
-        Ea = -slope * R  
+        Ea_J = -slope * R   # J/mol
+        Ea_kJ = Ea_J / 1000
+
+        Tm = np.mean(T_list)
+        beta_avg = np.mean(list(data.keys()))
+
+        k0 = (beta_avg * Ea_J * np.exp(Ea_J / (R * Tm))) / (R * (Tm ** 2))
+
+        delta_H = (Ea_J - R * Tm) / 1000  # kJ/mol
+        delta_G = (Ea_J + R * Tm * np.log((kB * Tm) / (h * k0))) / 1000  # kJ/mol
+        delta_S = (delta_H * 1000 - delta_G * 1000) / Tm / 1000  # kJ/mol·K
 
         records.append({
-            "α": a,
-            "Ea (kJ/mol)": Ea / 1000,
+            "α": round(a, 2),
+            "Ea (kJ/mol)": round(Ea_kJ, 3),
             "Intercept": intercept,
-            "R²": r ** 2
+            "R²": round(r ** 2, 5),
+            "k0 (1/min)": f"{k0:.3e}",
+            "ΔH (kJ/mol)": round(delta_H, 3),
+            "ΔG (kJ/mol)": round(delta_G, 3),
+            "ΔS (kJ/mol·K)": round(delta_S, 5)
         })
 
         label = f'α={a:.2f}'
@@ -107,7 +126,7 @@ plt.grid(True)
 plt.tight_layout()
 plt.show(block=True)
 
-print(f" Results saved to: {csv_path}")
 print("\n Friedman DFM Summary :")
 print(df_res.head().to_string(index=False))
+print(f" Results saved to: {csv_path}")
 
