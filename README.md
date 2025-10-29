@@ -30,44 +30,6 @@ It reads raw TXT-format TGA data, computes **conversion (α)**, **temperature at
 
 ---
 
-## Folder Structure 📁
-
-```
-minor_project/
-│
-├─ analysis/
-│ ├─ deam_analysis.py  
-│ ├─ dataLoader.py   # Loads txt files
-│ └─ dpm_analysis.py  
-│ └─ kas_analysis.py 
-│ └─ ofw_analysis.py  
-│ └─ sparink_analysis.py  
-│
-├─ dataSets/ # Input TGA TXT files
-│ ├─ wallnut@5 (600 micron).txt
-│ ├─ wallnut@10 (600 micron).txt
-│ ├─ wallnut@40 (600 micron).txt
-│ └─ wallnut@60 (600 micron).txt
-│
-├─ images / # Shows all for plots
-│ ├─ deam.png
-│ ├─ dfm.png
-│ ├─ kas.png
-│ ├─ ofw.png
-│ ├─ starink.png
-|
-├─ results / # Display all for csv_files
-│ ├─ daem_results.csv
-│ ├─ dfm_results.csv
-│ ├─ kas_results.csv
-│ ├─ ofw_results.csv
-│ ├─ starink_results.csv
-│
-├─ kinetic_analysis.py # Main executable script
-```
-
----
-
 ## 📷 Screen Shots
 
 ### Distributed Activation Energy Model
@@ -84,6 +46,29 @@ minor_project/
 
 ###  Starink
 ![ Starink](./images/starink.png)
+
+### Thermogravimetric Profiles
+![Thermogravimetric Profiles](./images/thermogravimetric.png)
+
+### Thermodynamic Energy
+![Thermodynamic Energy](./images/thermodynamic_energy.png)
+
+###  Criado Master Plot
+![ Criado Master Plot](./images/criado_plot_.png)
+
+---
+
+# 🔬 Criado’s Master Plot (DFM-Based)
+
+This module generates **Criado’s Master Plots** for the *non-isothermal pyrolysis* of **Peltophorum pterocarpum (PP)** based on the **Differential Method**.  
+It helps to identify the most probable **degradation mechanism** by comparing experimental and theoretical master curves.
+
+---
+
+## ⚙️ Purpose
+
+The Criado method normalizes the experimental reaction rate data obtained from thermogravimetric analysis (TGA).  
+By plotting the normalized function **Z(α)/Z(0.5)** against the degree of conversion **α**, the resulting curves at different heating rates (β) can reveal whether the degradation follows diffusion, nucleation, or geometrical contraction mechanisms.
 
 ---
 
