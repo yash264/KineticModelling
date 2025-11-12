@@ -12,11 +12,12 @@ R = 8.314      # J/mol·K
 kB = 1.381e-23 # J/K
 h = 6.626e-34  # J·s
 
-alpha_levels = np.linspace(0.1, 0.9, 9)
+alpha_levels = np.linspace(0.2, 0.8, 7)
 DATA_DIR = '../dataSets'
 RESULTS_DIR = '../results'
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
+datasets = load_all_txt_files(DATA_DIR)
 
 data = {}
 for i, (fname, Ts, weight) in enumerate(datasets):
