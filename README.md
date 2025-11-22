@@ -54,7 +54,7 @@ It reads raw TXT-format TGA data, computes **conversion (α)**, **temperature at
 ![Thermodynamic Energy](./images/thermodynamic_energy.png)
 
 ###  Criado Master Plot
-![ Criado Master Plot](./images/criado_master_plot.png)
+![ Criado Master Plot](./images/criado_plot.png)
 
 ---
 

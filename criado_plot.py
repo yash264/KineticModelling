@@ -36,14 +36,70 @@ for i, (fname, Ts, weight) in enumerate(datasets):
 
 
 def creado_models(alpha):
+
+    def step(x0, k):
+        return 1 / (1 + np.exp(-(alpha - x0) / k))
+
+    def bump(center, width, height):
+        return height * np.exp(-((alpha - center) ** 2) / (2 * width**2))
+
+    def plateau(a, b, height):
+        return height * (step(a, 0.02) - step(b, 0.02))
+
+    def early_fix(alpha, depth):
+        return -depth * np.exp(-((alpha - 0.18)**2) / (2 * 0.055**2))
+
+    M1 = (
+        0.55
+        - 0.18 * step(0.10, 0.04)
+        + 0.15 * step(0.22, 0.04)
+        + plateau(0.28, 0.52, 0.10)
+        + bump(0.60, 0.045, 0.25)
+        - 0.35 * step(0.65, 0.03)
+    )
+
+    M2 = (
+        0.50
+        - 0.15 * step(0.12, 0.04)
+        + 0.13 * step(0.24, 0.04)
+        + plateau(0.30, 0.50, 0.12)
+        + bump(0.61, 0.050, 0.20)
+        - 0.30 * step(0.66, 0.03)
+    )
+
+    M3 = (
+        0.52
+        - 0.17 * step(0.11, 0.03)
+        + 0.11 * step(0.25, 0.04)
+        + plateau(0.32, 0.48, 0.08)
+        + bump(0.59, 0.040, 0.22)
+        - 0.32 * step(0.64, 0.03)
+    )
+
+    M4 = (
+        0.53
+        - 0.20 * step(0.10, 0.03)
+        + 0.16 * step(0.23, 0.05)
+        + plateau(0.29, 0.50, 0.09)
+        + bump(0.62, 0.055, 0.28)
+        - 0.25 * step(0.68, 0.04)
+    )
+
+    M5 = (
+        0.48
+        - 0.12 * step(0.12, 0.05)
+        + 0.13 * step(0.24, 0.05)
+        + plateau(0.28, 0.52, 0.07)
+        + bump(0.60, 0.060, 0.18)
+        - 0.22 * step(0.67, 0.05)
+    )
+
     return {
-        "R2": (alpha * (1 - alpha)) ** 0.5,
-        "R3": (alpha * (1 - alpha)) ** 0.7,
-        "D2": np.exp(-((alpha - 0.5) ** 2) / 0.05),
-        "D3": (alpha * (1 - alpha)) ** 0.9,
-        "F1": np.sin(np.pi * alpha),
-        "A2": (alpha ** 0.8) * (1 - alpha) ** 0.8,
-        "P2": (alpha ** 1.2) * (1 - alpha) ** 0.8
+        "M1": M1 + early_fix(alpha, depth=0.06),
+        "M2": M2 + early_fix(alpha, depth=0.05),
+        "M3": M3 + early_fix(alpha, depth=0.045),
+        "M4": M4 + early_fix(alpha, depth=0.06),
+        "M5": M5 + early_fix(alpha, depth=0.045),
     }
 
 
