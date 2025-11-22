@@ -73,7 +73,8 @@ for a in tqdm(alpha_levels, desc="Processing α levels"):
         Ea_J = -slope * R                # J/mol
         Ea = Ea_J / 1000                 # kJ/mol
 
-        Tm = np.mean(T_list)
+        # Tm = np.mean(T_list)
+        Tm=550
         beta_avg = np.mean(list(data.keys()))
 
         k0 = (beta_avg * Ea_J * np.exp(Ea_J / (R * Tm))) / (R * (Tm ** 2))
